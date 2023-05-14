@@ -18,37 +18,6 @@ app.get("/", (_req, res) => {
   console.log("/");
   res.end("ok");
 });
-
-app.post("/api-no-body-knows", async (req, res) => {
-  try {
-    const prompt = req.body.prompt.split("\n")[0];
-    console.log("/api-no-body-knows >", prompt);
-    const { data } = await axios.post(
-      `${env.CHATAPI_SINGLE_HOST}message/0000_hey_siri`,
-      {
-        message: `Please answer shortly. ${prompt}`,
-      },
-      {
-        proxy: false,
-      }
-    );
-    console.log("/api-no-body-knows <", data.response);
-    res.json({
-      success: true,
-      text: data.response,
-    });
-  } catch (e: any) {
-    res.json({
-      success: false,
-      text: e.message,
-    });
-  }
-});
-
-// axios.get(`${env.CHATAPI_SINGLE_HOST}`, { proxy: false }).then((res) => {
-//   console.log(res.data);
-// });
-
 app.post("/webhook", async (req, res) => {
   try {
     console.log("/webhook");
@@ -58,13 +27,12 @@ app.post("/webhook", async (req, res) => {
     const chatId = update.message.chat.id;
     // always return 200 for telegram webhook
     if (update.message) {
+      // 对话发生在群组中
       if (update.message.chat.type === "supergroup") {
         if (update.message.text.startsWith("/chat ")) {
           const message = update.message.text.replace("/chat ", "");
           const name = `${update.message.from.first_name}_${update.message.from.last_name}`;
-          const conversationId = ["chen_cheng"].includes(name)
-            ? `${update.message.from.id}_${name}`
-            : `telegram_general_3`;
+          const conversationId = `${update.message.from.id}_${name}`
           const sentMessage = await bot.sendMessage(
             chatId,
             "稍等下，我在思考...",
@@ -74,13 +42,11 @@ app.post("/webhook", async (req, res) => {
           );
           try {
             const { data } = await axios.post(
-              `${env.CHATAPI_SINGLE_HOST}message/${conversationId}`,
-              {
-                message,
-              },
-              {
-                proxy: false,
-              }
+                `${env.CHATAPI_SINGLE_HOST}conversation`,
+                {
+                  message,
+                  conversationId,
+                }
             );
             console.log(">>>", data.response);
             bot
